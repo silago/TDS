@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f75913dc7bb9c014a8e303926c34c72e, type: 3}
+  m_Name: GameConfig
+  m_EditorClassIdentifier: 
+  MoveSpeed: 6
+  MaxHealth: 100
+  RespawnDelay: 3
+  MeleeRange: 0.9
+  MeleeDamage: 25
+  MeleeCooldown: 0.5
+  Weapons:
+  - Id: 1
+    BulletPrefab: {fileID: 8944397678403046193, guid: f513ad893d81da74d914959e53ce3efe, type: 3}
+    Range: 5
+    Damage: 1
+    FireRate: 5
+    MagSize: 1000
+    Pellets: 1
+    SpreadDeg: 1
+    BulletSpeed: 10
+  PickupRadius: 0.8
+  MatchDuration: 180
+  HitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
