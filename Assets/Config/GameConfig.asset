@@ -28,6 +28,7 @@ MonoBehaviour:
     Pellets: 1
     SpreadDeg: 1
     BulletSpeed: 10
+    ShootOffset: 1
   PickupRadius: 0.8
   MatchDuration: 180
   HitMask:
