@@ -16,7 +16,7 @@ namespace TDS.Bootstrap
             Instance = this;
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             if (!NetworkServer.active)
                 return;

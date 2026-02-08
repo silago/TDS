@@ -1,6 +1,7 @@
 using Leopotam.EcsLite;
 using Mirror;
 using UnityEngine;
+using System.Collections.Generic;
 using TDS.Bootstrap;
 using TDS.Config;
 using TDS.Ecs.Components;
@@ -11,15 +12,22 @@ namespace TDS.View
     [RequireComponent(typeof(Collider2D))]
     public class PlayerView : NetworkBehaviour
     {
-        [SyncVar] private int _health;
+        public static event System.Action<PlayerView> LocalPlayerReady;
+
+        [SyncVar(hook = nameof(OnHealthChanged))] private int _health;
         [SyncVar(hook = nameof(OnAliveChanged))] private bool _alive = true;
-        [SyncVar] private WeaponType _weaponType = WeaponType.None;
-        [SyncVar] private int _ammo;
-        [SyncVar] private int _magSize;
+        [SyncVar(hook = nameof(OnWeaponTypeChanged))] private WeaponType _weaponType = WeaponType.None;
+        [SyncVar(hook = nameof(OnAmmoChanged))] private int _ammo;
+        [SyncVar(hook = nameof(OnMagChanged))] private int _magSize;
+
+        public event System.Action<int> HealthChanged;
+        public event System.Action<WeaponType, int, int> WeaponChanged;
 
         private SpriteRenderer _sprite;
         private Collider2D _collider;
+        private Rigidbody2D _rb;
         private int _entity = -1;
+        private readonly Dictionary<int, BulletVisual> _bullets = new Dictionary<int, BulletVisual>();
 
         public int Health => _health;
         public WeaponType WeaponType => _weaponType;
@@ -30,6 +38,7 @@ namespace TDS.View
         {
             _sprite = GetComponentInChildren<SpriteRenderer>();
             _collider = GetComponent<Collider2D>();
+            _rb = GetComponent<Rigidbody2D>();
         }
 
         public override void OnStartServer()
@@ -86,11 +95,18 @@ namespace TDS.View
             ref var view = ref world.GetPool<ViewRef>().Add(_entity);
             view.Transform = transform;
             view.View = this;
+            view.Rb = _rb;
 
             registry.RegisterPlayer(netId, _entity, this);
             ServerSetHealth(health.Current);
             ServerSetAlive(true);
             ServerSetWeapon(WeaponType.None, 0, 0);
+        }
+
+        public override void OnStartLocalPlayer()
+        {
+            base.OnStartLocalPlayer();
+            LocalPlayerReady?.Invoke(this);
         }
 
         public override void OnStopServer()
@@ -153,6 +169,7 @@ namespace TDS.View
         public void ServerSetHealth(int value)
         {
             _health = value;
+            HealthChanged?.Invoke(_health);
         }
 
         public void ServerSetAlive(bool value)
@@ -166,10 +183,11 @@ namespace TDS.View
             _weaponType = type;
             _ammo = ammo;
             _magSize = magSize;
+            WeaponChanged?.Invoke(_weaponType, _ammo, _magSize);
         }
 
         [ClientRpc]
-        public void RpcSpawnBullet(WeaponType weaponType, Vector2 origin, Vector2 dir, float speed, float range)
+        public void RpcSpawnBullet(WeaponType weaponType, int bulletId, Vector2 origin, Vector2 dir, float speed, float range)
         {
             var ctx = EcsBootstrap.Instance != null ? EcsBootstrap.Instance.Context : null;
             if (ctx == null || !ctx.Config.TryGetWeapon(weaponType, out var cfg))
@@ -179,7 +197,22 @@ namespace TDS.View
                 return;
 
             var bullet = BulletPool.Get(cfg.BulletPrefab);
+            bullet.Id = bulletId;
+            bullet.OnDespawn = OnBulletDespawned;
             bullet.Init(origin, dir, speed, range);
+            _bullets[bulletId] = bullet;
+        }
+
+        [ClientRpc]
+        public void RpcBulletHit(int bulletId)
+        {
+            if (_bullets.TryGetValue(bulletId, out var bullet))
+                bullet.ForceDespawn();
+        }
+
+        private void OnBulletDespawned(int bulletId)
+        {
+            _bullets.Remove(bulletId);
         }
 
         [ClientRpc]
@@ -208,6 +241,26 @@ namespace TDS.View
         private void OnAliveChanged(bool oldValue, bool newValue)
         {
             UpdateAliveVisual();
+        }
+
+        private void OnHealthChanged(int oldValue, int newValue)
+        {
+            HealthChanged?.Invoke(newValue);
+        }
+
+        private void OnWeaponTypeChanged(WeaponType oldValue, WeaponType newValue)
+        {
+            WeaponChanged?.Invoke(newValue, _ammo, _magSize);
+        }
+
+        private void OnAmmoChanged(int oldValue, int newValue)
+        {
+            WeaponChanged?.Invoke(_weaponType, newValue, _magSize);
+        }
+
+        private void OnMagChanged(int oldValue, int newValue)
+        {
+            WeaponChanged?.Invoke(_weaponType, _ammo, newValue);
         }
     }
 }

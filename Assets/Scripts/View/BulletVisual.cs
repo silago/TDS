@@ -5,14 +5,18 @@ namespace TDS.View
     public class BulletVisual : MonoBehaviour
     {
         [HideInInspector] public int PrefabId;
+        [HideInInspector] public int Id;
+        public System.Action<int> OnDespawn;
 
         private Vector2 _dir;
         private Vector2 _start;
         private float _remaining;
         private float _speed;
+        private bool _despawned;
 
         public void Init(Vector2 origin, Vector2 dir, float speed, float range)
         {
+            _despawned = false;
             _dir = dir.normalized;
             _start = origin;
             transform.position = origin;
@@ -26,7 +30,7 @@ namespace TDS.View
             float step = _speed * Time.deltaTime;
             if (step <= 0f)
             {
-                BulletPool.Return(this);
+                ForceDespawn();
                 return;
             }
 
@@ -34,7 +38,18 @@ namespace TDS.View
             transform.position += (Vector3)(_dir * travel);
             _remaining -= travel;
             if (_remaining <= 0f)
-                BulletPool.Return(this);
+                ForceDespawn();
+        }
+
+        public void ForceDespawn()
+        {
+            if (_despawned)
+                return;
+
+            _despawned = true;
+            OnDespawn?.Invoke(Id);
+            OnDespawn = null;
+            BulletPool.Return(this);
         }
     }
 }

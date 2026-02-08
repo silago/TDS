@@ -11,6 +11,7 @@ namespace TDS.Ecs.Systems
     {
         private readonly GameConfig _config;
         private readonly EntityRegistry _registry;
+        private static int _nextBulletId = 1;
 
         public ShootingSystem(GameConfig config, EntityRegistry registry)
         {
@@ -56,6 +57,7 @@ namespace TDS.Ecs.Systems
                 ref var tr = ref transformPool.Get(entity);
                 Vector2 origin = tr.Position;
                 Vector2 dir = input.Aim;
+                Vector2 muzzle = origin + dir.normalized * weapon.ShootOffset; 
 
                 ref var view = ref viewPool.Get(entity);
                 view.View.ServerSetWeapon(weapon.Type, weapon.Ammo, weapon.MagSize);
@@ -72,11 +74,13 @@ namespace TDS.Ecs.Systems
                         shotDir = (Quaternion.Euler(0f, 0f, angle) * shotDir).normalized;
                     }
 
-                    view.View.RpcSpawnBullet(weapon.Type, origin, shotDir, weapon.BulletSpeed, weapon.Range);
+                    int bulletId = _nextBulletId++;
+                    view.View.RpcSpawnBullet(weapon.Type, bulletId, muzzle, shotDir, weapon.BulletSpeed, weapon.Range);
 
                     int bulletEntity = world.NewEntity();
                     ref var bullet = ref bulletPool.Add(bulletEntity);
-                    bullet.Position = origin;
+                    bullet.Id = bulletId;
+                    bullet.Position = muzzle;
                     bullet.Direction = shotDir;
                     bullet.Speed = weapon.BulletSpeed;
                     bullet.RemainingDistance = weapon.Range;

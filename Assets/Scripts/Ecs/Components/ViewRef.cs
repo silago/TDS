@@ -7,5 +7,6 @@ namespace TDS.Ecs.Components
     {
         public Transform Transform;
         public PlayerView View;
+        public Rigidbody2D Rb;
     }
 }

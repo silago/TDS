@@ -64,6 +64,9 @@ namespace TDS.Ecs.Systems
                         }
                     }
 
+                    if (_registry.TryGetViewByNetId(bullet.ShooterNetId, out var shooterView))
+                        shooterView.RpcBulletHit(bullet.Id);
+
                     bulletPool.Del(entity);
                     continue;
                 }

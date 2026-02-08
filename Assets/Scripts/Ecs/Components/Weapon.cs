@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace TDS.Ecs.Components
 {
     public struct Weapon
@@ -12,5 +14,6 @@ namespace TDS.Ecs.Components
         public int Pellets;
         public float SpreadDeg;
         public float BulletSpeed;
+        public float ShootOffset;
     }
 }

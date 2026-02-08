@@ -14,30 +14,64 @@ namespace TDS.View
 
         private PlayerView _local;
 
-        private void Update()
+        private void OnEnable()
         {
-            if (_local == null)
-                TryResolveLocal();
+            PlayerView.LocalPlayerReady += OnLocalReady;
+            TryResolveLocal();
+        }
 
-            if (_local == null)
-            {
-                SetText(HealthText, "Health: --");
-                SetText(WeaponText, "Weapon: --");
-                SetText(AmmoText, "Ammo: --");
-                return;
-            }
+        private void OnDisable()
+        {
+            PlayerView.LocalPlayerReady -= OnLocalReady;
+            Unsubscribe();
+        }
 
-            SetText(HealthText, $"Health: {_local.Health}");
-            string weaponName = _local.WeaponType == WeaponType.None ? "Melee" : _local.WeaponType.ToString();
-            SetText(WeaponText, $"Weapon: {weaponName}");
-            string ammo = _local.WeaponType == WeaponType.None ? "-" : $"{_local.Ammo}/{_local.MagSize}";
-            SetText(AmmoText, $"Ammo: {ammo}");
+        private void OnLocalReady(PlayerView view)
+        {
+            Bind(view);
         }
 
         private void TryResolveLocal()
         {
             if (NetworkClient.localPlayer != null)
-                _local = NetworkClient.localPlayer.GetComponent<PlayerView>();
+                Bind(NetworkClient.localPlayer.GetComponent<PlayerView>());
+        }
+
+        private void Bind(PlayerView view)
+        {
+            if (view == null || view == _local)
+                return;
+
+            Unsubscribe();
+            _local = view;
+            _local.HealthChanged += OnHealthChanged;
+            _local.WeaponChanged += OnWeaponChanged;
+
+            OnHealthChanged(_local.Health);
+            OnWeaponChanged(_local.WeaponType, _local.Ammo, _local.MagSize);
+        }
+
+        private void Unsubscribe()
+        {
+            if (_local == null)
+                return;
+
+            _local.HealthChanged -= OnHealthChanged;
+            _local.WeaponChanged -= OnWeaponChanged;
+            _local = null;
+        }
+
+        private void OnHealthChanged(int value)
+        {
+            SetText(HealthText, $"Health: {value}");
+        }
+
+        private void OnWeaponChanged(WeaponType type, int ammo, int magSize)
+        {
+            string weaponName = type == WeaponType.None ? "Melee" : type.ToString();
+            SetText(WeaponText, $"Weapon: {weaponName}");
+            string ammoText = type == WeaponType.None ? "-" : $"{ammo}/{magSize}";
+            SetText(AmmoText, $"Ammo: {ammoText}");
         }
 
         private void SetText(TMP_Text text, string value)

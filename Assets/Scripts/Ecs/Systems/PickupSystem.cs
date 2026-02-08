@@ -62,6 +62,7 @@ namespace TDS.Ecs.Systems
                         weapon.Damage = cfg.Damage;
                         weapon.FireCooldown = 1f / Mathf.Max(0.01f, cfg.FireRate);
                         weapon.MagSize = Mathf.Max(1, cfg.MagSize);
+                        weapon.ShootOffset = cfg.ShootOffset;
                         weapon.Ammo = weapon.MagSize;
                         weapon.Pellets = Mathf.Max(1, cfg.Pellets);
                         weapon.SpreadDeg = Mathf.Max(0f, cfg.SpreadDeg);

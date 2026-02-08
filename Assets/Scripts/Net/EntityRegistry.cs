@@ -30,5 +30,11 @@ namespace TDS.Net
         public bool TryGetEntity(uint netId, out int entity) => _netIdToEntity.TryGetValue(netId, out entity);
 
         public bool TryGetView(int entity, out PlayerView view) => _entityToView.TryGetValue(entity, out view);
+
+        public bool TryGetViewByNetId(uint netId, out PlayerView view)
+        {
+            view = null;
+            return _netIdToEntity.TryGetValue(netId, out int entity) && _entityToView.TryGetValue(entity, out view);
+        }
     }
 }

@@ -4,6 +4,7 @@ namespace TDS.Ecs.Components
 {
     public struct Bullet
     {
+        public int Id;
         public Vector2 Position;
         public Vector2 Direction;
         public float Speed;

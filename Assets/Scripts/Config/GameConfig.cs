@@ -20,6 +20,7 @@ namespace TDS.Config
             public int Pellets;
             public float SpreadDeg;
             public float BulletSpeed;
+            public float ShootOffset;
         }
 
         [Header("Player")]

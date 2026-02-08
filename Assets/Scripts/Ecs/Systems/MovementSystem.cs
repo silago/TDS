@@ -27,10 +27,20 @@ namespace TDS.Ecs.Systems
                 ref var speed = ref speedPool.Get(entity);
                 ref var tr = ref transformPool.Get(entity);
 
-                tr.Position += input.Move * speed.Value * Time.deltaTime;
+                Vector2 delta = input.Move * speed.Value * Time.fixedDeltaTime;
 
                 ref var view = ref viewPool.Get(entity);
-                view.Transform.position = tr.Position;
+                if (view.Rb != null)
+                {
+                    tr.Position = view.Rb.position;
+                    Vector2 target = tr.Position + delta;
+                    view.Rb.MovePosition(target);
+                }
+                else
+                {
+                    tr.Position += delta;
+                    view.Transform.position = tr.Position;
+                }
             }
         }
 
