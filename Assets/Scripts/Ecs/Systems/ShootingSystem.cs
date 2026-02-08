@@ -58,6 +58,7 @@ namespace TDS.Ecs.Systems
                 Vector2 dir = input.Aim;
 
                 ref var view = ref viewPool.Get(entity);
+                view.View.ServerSetWeapon(weapon.Type, weapon.Ammo, weapon.MagSize);
 
                 int pellets = Mathf.Max(1, weapon.Pellets);
                 float spread = Mathf.Max(0f, weapon.SpreadDeg);

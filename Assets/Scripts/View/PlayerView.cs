@@ -11,14 +11,20 @@ namespace TDS.View
     [RequireComponent(typeof(Collider2D))]
     public class PlayerView : NetworkBehaviour
     {
-        [SyncVar(hook = nameof(OnHealthChanged))] private int _health;
+        [SyncVar] private int _health;
         [SyncVar(hook = nameof(OnAliveChanged))] private bool _alive = true;
+        [SyncVar] private WeaponType _weaponType = WeaponType.None;
+        [SyncVar] private int _ammo;
+        [SyncVar] private int _magSize;
 
         private SpriteRenderer _sprite;
         private Collider2D _collider;
         private int _entity = -1;
 
         public int Health => _health;
+        public WeaponType WeaponType => _weaponType;
+        public int Ammo => _ammo;
+        public int MagSize => _magSize;
 
         private void Awake()
         {
@@ -84,6 +90,7 @@ namespace TDS.View
             registry.RegisterPlayer(netId, _entity, this);
             ServerSetHealth(health.Current);
             ServerSetAlive(true);
+            ServerSetWeapon(WeaponType.None, 0, 0);
         }
 
         public override void OnStopServer()
@@ -151,6 +158,14 @@ namespace TDS.View
         public void ServerSetAlive(bool value)
         {
             _alive = value;
+            UpdateAliveVisual();
+        }
+
+        public void ServerSetWeapon(WeaponType type, int ammo, int magSize)
+        {
+            _weaponType = type;
+            _ammo = ammo;
+            _magSize = magSize;
         }
 
         [ClientRpc]
@@ -177,16 +192,22 @@ namespace TDS.View
         {
         }
 
-        private void OnHealthChanged(int oldValue, int newValue)
+        private void UpdateAliveVisual()
         {
+            if (_sprite != null)
+                _sprite.enabled = _alive;
+            if (_collider != null)
+                _collider.enabled = _alive;
+        }
+
+        private void OnEnable()
+        {
+            UpdateAliveVisual();
         }
 
         private void OnAliveChanged(bool oldValue, bool newValue)
         {
-            if (_sprite != null)
-                _sprite.enabled = newValue;
-            if (_collider != null)
-                _collider.enabled = newValue;
+            UpdateAliveVisual();
         }
     }
 }

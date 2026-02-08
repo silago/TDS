@@ -42,19 +42,22 @@ namespace TDS.Ecs.Systems
                 ref var health = ref healthPool.Get(entity);
                 health.Current = health.Max;
                 health.LastDamager = 0;
+                
+                ref var view = ref viewPool.Get(entity);
 
                 if (weaponPool.Has(entity))
                 {
                     ref var weapon = ref weaponPool.Get(entity);
                     if (weapon.MagSize > 0)
                         weapon.Ammo = weapon.MagSize;
+
+                    view.View.ServerSetWeapon(weapon.Type, weapon.Ammo, weapon.MagSize);
                 }
 
                 Vector2 spawn = _netManager != null ? _netManager.GetSpawnPosition() : Vector2.zero;
                 ref var tr = ref transformPool.Get(entity);
                 tr.Position = spawn;
 
-                ref var view = ref viewPool.Get(entity);
                 view.Transform.position = spawn;
                 view.View.ServerSetHealth(health.Current);
                 view.View.ServerSetAlive(true);

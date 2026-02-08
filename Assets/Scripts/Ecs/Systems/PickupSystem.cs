@@ -66,6 +66,7 @@ namespace TDS.Ecs.Systems
                         weapon.Pellets = Mathf.Max(1, cfg.Pellets);
                         weapon.SpreadDeg = Mathf.Max(0f, cfg.SpreadDeg);
                         weapon.BulletSpeed = Mathf.Max(0.1f, cfg.BulletSpeed);
+                        view.ServerSetWeapon(weapon.Type, weapon.Ammo, weapon.MagSize);
                     }
 
                     pickup.ServerConsume();
