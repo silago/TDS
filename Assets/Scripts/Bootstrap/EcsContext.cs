@@ -38,11 +38,13 @@ namespace TDS.Bootstrap
             var netManager = ArenaNetworkManager.Instance;
 
             ServerSystems
+                .Add(new BotInputSystem(_config, _registry))
                 .Add(new InputApplyServerSystem())
                 .Add(new MovementSystem())
                 .Add(new AimSystem())
                 .Add(new ShootingSystem(_config, _registry))
                 .Add(new BulletSystem(_config, _registry))
+                .Add(new DropWeaponSystem(netManager))
                 .Add(new MeleeSystem(_config, _registry))
                 .Add(new DamageSystem())
                 .Add(new DeathSystem(_config, netManager))

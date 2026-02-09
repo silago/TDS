@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using TDS.Ecs.Components;
+using TDS.View;
 
 namespace TDS.Net
 {
@@ -15,6 +17,13 @@ namespace TDS.Net
         [Header("Spawns")]
         public List<Transform> SpawnPoints = new List<Transform>();
 
+        [Header("Pickups")]
+        public PickupView DroppedPickupPrefab;
+        public float DropOwnerIgnoreSeconds = 0.35f;
+
+        [Header("Bots")]
+        [Range(0, 7)] public int BotCount = 0;
+
         public override void Awake()
         {
             base.Awake();
@@ -28,6 +37,7 @@ namespace TDS.Net
             EnsureMatchState();
             if (MatchState != null)
                 MatchState.RemainingTime = MatchDuration;
+            SpawnBots();
         }
 
         public override void OnServerAddPlayer(NetworkConnectionToClient conn)
@@ -78,6 +88,18 @@ namespace TDS.Net
             return SpawnPoints[idx].position;
         }
 
+        [Server]
+        public void SpawnDroppedPickup(WeaponType weaponType, Vector2 position, uint ownerNetId)
+        {
+            if (weaponType == WeaponType.None || DroppedPickupPrefab == null)
+                return;
+
+            var pickup = Instantiate(DroppedPickupPrefab, position, Quaternion.identity);
+            pickup.WeaponType = weaponType;
+            pickup.ServerConfigureDropped(ownerNetId, DropOwnerIgnoreSeconds);
+            NetworkServer.Spawn(pickup.gameObject);
+        }
+
         private void CacheSpawnPoints()
         {
             if (SpawnPoints.Count > 0)
@@ -94,6 +116,22 @@ namespace TDS.Net
                 return;
 
             MatchState = FindFirstObjectByType<MatchStateView>();
+        }
+
+        [Server]
+        private void SpawnBots()
+        {
+            int count = Mathf.Clamp(BotCount, 0, 7);
+            for (int i = 0; i < count; i++)
+            {
+                var startPos = GetSpawnPosition();
+                var botObj = Instantiate(playerPrefab, startPos, Quaternion.identity);
+                var botView = botObj.GetComponent<PlayerView>();
+                if (botView != null)
+                    botView.ConfigureAsBot();
+
+                NetworkServer.Spawn(botObj);
+            }
         }
     }
 }

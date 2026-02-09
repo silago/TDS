@@ -39,6 +39,12 @@ namespace TDS.Config
         [Header("Pickups")]
         public float PickupRadius = 0.8f;
 
+        [Header("Bots")]
+        public float BotRepathInterval = 0.35f;
+        public float BotStopDistance = 1.4f;
+        public float BotFireDistance = 10f;
+        public float BotGridCellSize = 0.5f;
+
         [Header("Match")]
         public float MatchDuration = 180f;
 
