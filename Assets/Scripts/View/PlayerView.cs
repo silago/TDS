@@ -13,6 +13,7 @@ namespace TDS.View
     public class PlayerView : NetworkBehaviour
     {
         public static event System.Action<PlayerView> LocalPlayerReady;
+        [SyncVar] private bool _isBot;
 
         [SyncVar(hook = nameof(OnHealthChanged))] private int _health;
         [SyncVar(hook = nameof(OnAliveChanged))] private bool _alive = true;
@@ -33,6 +34,7 @@ namespace TDS.View
         public WeaponType WeaponType => _weaponType;
         public int Ammo => _ammo;
         public int MagSize => _magSize;
+        public bool IsBot => _isBot;
 
         private void Awake()
         {
@@ -97,10 +99,28 @@ namespace TDS.View
             view.View = this;
             view.Rb = _rb;
 
+            if (_isBot)
+                world.GetPool<BotTag>().Add(_entity);
+
+            if (_isBot && config.TryGetWeapon(WeaponType.Pistol, out var botWeaponCfg))
+            {
+                weapon.Type = botWeaponCfg.Id;
+                weapon.Range = botWeaponCfg.Range;
+                weapon.Damage = botWeaponCfg.Damage;
+                weapon.FireCooldown = 1f / Mathf.Max(0.01f, botWeaponCfg.FireRate);
+                weapon.NextFireTime = 0f;
+                weapon.MagSize = Mathf.Max(1, botWeaponCfg.MagSize);
+                weapon.Ammo = weapon.MagSize;
+                weapon.Pellets = Mathf.Max(1, botWeaponCfg.Pellets);
+                weapon.SpreadDeg = Mathf.Max(0f, botWeaponCfg.SpreadDeg);
+                weapon.BulletSpeed = Mathf.Max(0.1f, botWeaponCfg.BulletSpeed);
+                weapon.ShootOffset = botWeaponCfg.ShootOffset;
+            }
+
             registry.RegisterPlayer(netId, _entity, this);
             ServerSetHealth(health.Current);
             ServerSetAlive(true);
-            ServerSetWeapon(WeaponType.None, 0, 0);
+            ServerSetWeapon(weapon.Type, weapon.Ammo, weapon.MagSize);
         }
 
         public override void OnStartLocalPlayer()
@@ -135,6 +155,7 @@ namespace TDS.View
             var move = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
             bool fire = Input.GetMouseButton(0);
             bool melee = Input.GetMouseButton(1);
+            bool drop = Input.GetKey(KeyCode.G);
 
             Vector2 aim = Vector2.right;
             var cam = Camera.main;
@@ -144,11 +165,11 @@ namespace TDS.View
                 aim = (mouseWorld - transform.position);
             }
 
-            CmdSendInput(move, aim, fire, melee);
+            CmdSendInput(move, aim, fire, melee, drop);
         }
 
         [Command(channel = Channels.Unreliable)]
-        private void CmdSendInput(Vector2 move, Vector2 aim, bool fire, bool melee)
+        private void CmdSendInput(Vector2 move, Vector2 aim, bool fire, bool melee, bool drop)
         {
             var ctx = EcsBootstrap.Instance.Context;
             if (ctx == null || _entity < 0)
@@ -164,6 +185,7 @@ namespace TDS.View
             input.Aim = aim;
             input.Fire = fire;
             input.Melee = melee;
+            input.Drop = drop;
         }
 
         public void ServerSetHealth(int value)
@@ -184,6 +206,12 @@ namespace TDS.View
             _ammo = ammo;
             _magSize = magSize;
             WeaponChanged?.Invoke(_weaponType, _ammo, _magSize);
+        }
+
+        [Server]
+        public void ConfigureAsBot()
+        {
+            _isBot = true;
         }
 
         [ClientRpc]

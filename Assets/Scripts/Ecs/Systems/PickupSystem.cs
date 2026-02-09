@@ -55,6 +55,16 @@ namespace TDS.Ecs.Systems
                         continue;
 
                     ref var weapon = ref weaponPool.Get(playerEntity);
+                    if (weapon.Type == pickup.WeaponType)
+                        continue;
+
+                    if (pickup.IgnoredOwnerNetId != 0 &&
+                        view.netId == pickup.IgnoredOwnerNetId &&
+                        Time.time < pickup.OwnerIgnoreUntilTime)
+                    {
+                        continue;
+                    }
+
                     if (_config.TryGetWeapon(pickup.WeaponType, out var cfg))
                     {
                         weapon.Type = cfg.Id;

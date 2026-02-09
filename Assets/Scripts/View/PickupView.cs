@@ -11,6 +11,8 @@ namespace TDS.View
     public class PickupView : NetworkBehaviour
     {
         public WeaponType WeaponType = WeaponType.Pistol;
+        public uint IgnoredOwnerNetId { get; private set; }
+        public float OwnerIgnoreUntilTime { get; private set; }
 
         private int _entity = -1;
 
@@ -51,6 +53,13 @@ namespace TDS.View
             var ctx = EcsBootstrap.Instance.Context;
             ctx.PickupRegistry.Unregister(this);
             NetworkServer.Destroy(gameObject);
+        }
+
+        [Server]
+        public void ServerConfigureDropped(uint ownerNetId, float ownerIgnoreSeconds)
+        {
+            IgnoredOwnerNetId = ownerNetId;
+            OwnerIgnoreUntilTime = Time.time + Mathf.Max(0f, ownerIgnoreSeconds);
         }
     }
 }
