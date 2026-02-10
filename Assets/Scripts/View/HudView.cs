@@ -68,9 +68,9 @@ namespace TDS.View
 
         private void OnWeaponChanged(WeaponType type, int ammo, int magSize)
         {
-            string weaponName = type == WeaponType.None ? "Melee" : type.ToString();
+            string weaponName = type == WeaponType.None ? "None" : type.ToString();
             SetText(WeaponText, $"Weapon: {weaponName}");
-            string ammoText = type == WeaponType.None ? "-" : $"{ammo}/{magSize}";
+            string ammoText = type == WeaponType.None || magSize <= 0 ? "-" : $"{ammo}/{magSize}";
             SetText(AmmoText, $"Ammo: {ammoText}");
         }
 

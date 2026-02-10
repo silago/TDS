@@ -8,22 +8,30 @@ namespace TDS.Ecs.Systems
         public void Run(EcsSystems systems)
         {
             var world = systems.GetWorld();
-            var dmgPool = world.GetPool<DamageEvent>();
+            var requestPool = world.GetPool<DamageRequest>();
             var healthPool = world.GetPool<Health>();
+            var deadPool = world.GetPool<Dead>();
 
-            var filter = world.Filter<DamageEvent>().Inc<Health>().End();
-            foreach (var entity in filter)
+            var filter = world.Filter<DamageRequest>().End();
+            foreach (var requestEntity in filter)
             {
-                ref var dmg = ref dmgPool.Get(entity);
-                ref var health = ref healthPool.Get(entity);
-                if (dmg.Amount > 0)
-                    health.LastDamager = dmg.SourceNetId;
-                health.Current -= dmg.Amount;
+                ref var request = ref requestPool.Get(requestEntity);
+                int targetEntity = request.TargetEntity;
+                if (!healthPool.Has(targetEntity) || deadPool.Has(targetEntity))
+                {
+                    requestPool.Del(requestEntity);
+                    continue;
+                }
+
+                ref var health = ref healthPool.Get(targetEntity);
+                if (request.Amount > 0)
+                    health.LastDamager = request.SourceNetId;
+
+                health.Current -= request.Amount;
                 if (health.Current < 0)
                     health.Current = 0;
 
-                dmg.Amount = 0;
-                dmgPool.Del(entity);
+                requestPool.Del(requestEntity);
             }
         }
     }

@@ -13,6 +13,7 @@ namespace TDS.Ecs.Systems
         private readonly GameConfig _config;
         private readonly EntityRegistry _registry;
         private ArenaNavGrid _grid;
+        private readonly RaycastHit2D[] _rayHits = new RaycastHit2D[16];
 
         public BotInputSystem(GameConfig config, EntityRegistry registry)
         {
@@ -26,13 +27,14 @@ namespace TDS.Ecs.Systems
             var inputPool = world.GetPool<InputData>();
             var transformPool = world.GetPool<Transform2D>();
             var healthPool = world.GetPool<Health>();
+            var weaponPool = world.GetPool<Weapon>();
             var botPool = world.GetPool<BotAgent>();
             var deadPool = world.GetPool<Dead>();
 
             if (_grid == null)
                 _grid = ArenaNavGrid.Build(_config.HitMask, Mathf.Max(0.25f, _config.BotGridCellSize));
 
-            var bots = world.Filter<BotTag>().Inc<PlayerTag>().Inc<InputData>().Inc<Transform2D>().Inc<Health>().End();
+            var bots = world.Filter<BotTag>().Inc<PlayerTag>().Inc<InputData>().Inc<Transform2D>().Inc<Health>().Inc<Weapon>().End();
             foreach (var entity in bots)
             {
                 if (deadPool.Has(entity))
@@ -44,13 +46,16 @@ namespace TDS.Ecs.Systems
                 ref var bot = ref botPool.Get(entity);
                 ref var input = ref inputPool.Get(entity);
                 ref var tr = ref transformPool.Get(entity);
+                ref var weapon = ref weaponPool.Get(entity);
+                uint selfNetId = 0;
+                if (_registry.TryGetView(entity, out var selfView) && selfView != null)
+                    selfNetId = selfView.netId;
 
                 if (!TryPickTarget(entity, world, deadPool, healthPool, transformPool, out int targetEntity, out Vector2 targetPos))
                 {
                     input.Move = Vector2.zero;
                     input.Aim = Vector2.right;
                     input.Fire = false;
-                    input.Melee = false;
                     input.Drop = false;
                     continue;
                 }
@@ -88,9 +93,25 @@ namespace TDS.Ecs.Systems
                         move = aimDir;
                 }
 
+                bool wantsFire;
+                if (weapon.Type == WeaponType.None)
+                {
+                    wantsFire = false;
+                }
+                else if (weapon.FireMode == WeaponFireMode.Melee)
+                {
+                    float meleeRange = Mathf.Max(0.1f, weapon.Range) * 1.2f;
+                    wantsFire = distance <= meleeRange;
+                }
+                else
+                {
+                    wantsFire = distance <= _config.BotFireDistance &&
+                                distance <= Mathf.Max(0.1f, weapon.Range) &&
+                                HasLineOfSight(tr.Position, targetPos, targetEntity, selfNetId);
+                }
+
                 input.Move = move;
-                input.Melee = distance <= _config.MeleeRange * 1.05f;
-                input.Fire = distance <= _config.BotFireDistance && HasLineOfSight(tr.Position, targetPos, targetEntity);
+                input.Fire = wantsFire;
                 input.Drop = false;
             }
         }
@@ -136,7 +157,7 @@ namespace TDS.Ecs.Systems
             return targetEntity >= 0;
         }
 
-        private bool HasLineOfSight(Vector2 from, Vector2 to, int targetEntity)
+        private bool HasLineOfSight(Vector2 from, Vector2 to, int targetEntity, uint selfNetId)
         {
             if (!_registry.TryGetView(targetEntity, out var targetView) || targetView == null)
                 return false;
@@ -149,12 +170,36 @@ namespace TDS.Ecs.Systems
             Vector2 dir = delta / dist;
             Vector2 origin = from + dir * 0.2f;
             float castDist = Mathf.Max(0f, dist - 0.2f);
-            var hit = Physics2D.Raycast(origin, dir, castDist, _config.HitMask);
-            if (hit.collider == null)
+            int count = Physics2D.RaycastNonAlloc(origin, dir, _rayHits, castDist, _config.HitMask);
+            if (count <= 0)
                 return true;
 
-            var hitView = hit.collider.GetComponentInParent<PlayerView>();
-            return hitView != null && hitView.netId == targetView.netId;
+            float nearestDistance = float.MaxValue;
+            bool foundAnyRelevantHit = false;
+            bool targetVisible = false;
+
+            for (int i = 0; i < count; i++)
+            {
+                var hit = _rayHits[i];
+                if (hit.collider == null)
+                    continue;
+
+                if (hit.distance >= nearestDistance)
+                    continue;
+
+                var hitView = hit.collider.GetComponentInParent<PlayerView>();
+                if (hitView != null && hitView.netId == selfNetId)
+                    continue;
+
+                nearestDistance = hit.distance;
+                foundAnyRelevantHit = true;
+                targetVisible = hitView != null && hitView.netId == targetView.netId;
+            }
+
+            if (!foundAnyRelevantHit)
+                return true;
+
+            return targetVisible;
         }
 
         private sealed class ArenaNavGrid

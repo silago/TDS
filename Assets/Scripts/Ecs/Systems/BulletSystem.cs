@@ -22,7 +22,7 @@ namespace TDS.Ecs.Systems
         {
             var world = systems.GetWorld();
             var bulletPool = world.GetPool<Bullet>();
-            var damagePool = world.GetPool<DamageEvent>();
+            var requestPool = world.GetPool<DamageRequest>();
             var deadPool = world.GetPool<Dead>();
             var healthPool = world.GetPool<Health>();
 
@@ -55,9 +55,11 @@ namespace TDS.Ecs.Systems
                                 var health = healthPool.Get(targetEntity);
                                 if (health.Current > 0)
                                 {
-                                    ref var dmg = ref damagePool.Get(targetEntity);
-                                    dmg.Amount += bullet.Damage;
-                                    dmg.SourceNetId = bullet.ShooterNetId;
+                                    int requestEntity = world.NewEntity();
+                                    ref var request = ref requestPool.Add(requestEntity);
+                                    request.TargetEntity = targetEntity;
+                                    request.Amount = bullet.Damage;
+                                    request.SourceNetId = bullet.ShooterNetId;
                                     targetView.RpcHit(bullet.ShooterNetId, bullet.Damage);
                                 }
                             }

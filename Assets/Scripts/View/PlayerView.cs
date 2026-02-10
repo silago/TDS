@@ -77,22 +77,7 @@ namespace TDS.View
             health.LastDamager = 0;
 
             ref var weapon = ref world.GetPool<Weapon>().Add(_entity);
-            weapon.Type = WeaponType.None;
-            weapon.Range = 0f;
-            weapon.Damage = 0;
-            weapon.FireCooldown = 0f;
-            weapon.NextFireTime = 0f;
-            weapon.Ammo = 0;
-            weapon.MagSize = 0;
-            weapon.Pellets = 1;
-            weapon.SpreadDeg = 0f;
-            weapon.BulletSpeed = 0f;
-
-            ref var melee = ref world.GetPool<Melee>().Add(_entity);
-            melee.Range = config.MeleeRange;
-            melee.Damage = config.MeleeDamage;
-            melee.Cooldown = config.MeleeCooldown;
-            melee.NextTime = 0f;
+            weapon.Clear();
 
             ref var view = ref world.GetPool<ViewRef>().Add(_entity);
             view.Transform = transform;
@@ -102,19 +87,9 @@ namespace TDS.View
             if (_isBot)
                 world.GetPool<BotTag>().Add(_entity);
 
-            if (_isBot && config.TryGetWeapon(WeaponType.Pistol, out var botWeaponCfg))
+            if (config.TryGetWeapon(config.DefaultWeaponType, out var weaponCfg))
             {
-                weapon.Type = botWeaponCfg.Id;
-                weapon.Range = botWeaponCfg.Range;
-                weapon.Damage = botWeaponCfg.Damage;
-                weapon.FireCooldown = 1f / Mathf.Max(0.01f, botWeaponCfg.FireRate);
-                weapon.NextFireTime = 0f;
-                weapon.MagSize = Mathf.Max(1, botWeaponCfg.MagSize);
-                weapon.Ammo = weapon.MagSize;
-                weapon.Pellets = Mathf.Max(1, botWeaponCfg.Pellets);
-                weapon.SpreadDeg = Mathf.Max(0f, botWeaponCfg.SpreadDeg);
-                weapon.BulletSpeed = Mathf.Max(0.1f, botWeaponCfg.BulletSpeed);
-                weapon.ShootOffset = botWeaponCfg.ShootOffset;
+                weapon.Apply(weaponCfg);
             }
 
             registry.RegisterPlayer(netId, _entity, this);
@@ -154,7 +129,6 @@ namespace TDS.View
 
             var move = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
             bool fire = Input.GetMouseButton(0);
-            bool melee = Input.GetMouseButton(1);
             bool drop = Input.GetKey(KeyCode.G);
 
             Vector2 aim = Vector2.right;
@@ -165,11 +139,11 @@ namespace TDS.View
                 aim = (mouseWorld - transform.position);
             }
 
-            CmdSendInput(move, aim, fire, melee, drop);
+            CmdSendInput(move, aim, fire, drop);
         }
 
         [Command(channel = Channels.Unreliable)]
-        private void CmdSendInput(Vector2 move, Vector2 aim, bool fire, bool melee, bool drop)
+        private void CmdSendInput(Vector2 move, Vector2 aim, bool fire, bool drop)
         {
             var ctx = EcsBootstrap.Instance.Context;
             if (ctx == null || _entity < 0)
@@ -184,7 +158,6 @@ namespace TDS.View
             input.Move = move;
             input.Aim = aim;
             input.Fire = fire;
-            input.Melee = melee;
             input.Drop = drop;
         }
 

@@ -1,7 +1,8 @@
 namespace TDS.Ecs.Components
 {
-    public struct DamageEvent
+    public struct DamageRequest
     {
+        public int TargetEntity;
         public int Amount;
         public uint SourceNetId;
     }

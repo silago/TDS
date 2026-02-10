@@ -13,23 +13,37 @@ MonoBehaviour:
   m_Name: GameConfig
   m_EditorClassIdentifier: 
   MoveSpeed: 6
-  MaxHealth: 100
+  MaxHealth: 100000
   RespawnDelay: 3
   MeleeRange: 0.9
   MeleeDamage: 25
   MeleeCooldown: 0.5
   Weapons:
-  - Id: 1
-    BulletPrefab: {fileID: 8944397678403046193, guid: f513ad893d81da74d914959e53ce3efe, type: 3}
-    Range: 5
+  - Id: 0
+    BulletPrefab: {fileID: 0}
+    Range: 1
     Damage: 1
     FireRate: 5
     MagSize: 1000
     Pellets: 1
     SpreadDeg: 1
     BulletSpeed: 10
-    ShootOffset: 1
+    ShootOffset: 0.65
+  - Id: 1
+    BulletPrefab: {fileID: 8944397678403046193, guid: f513ad893d81da74d914959e53ce3efe, type: 3}
+    Range: 5
+    Damage: 100
+    FireRate: 5
+    MagSize: 1000
+    Pellets: 1
+    SpreadDeg: 1
+    BulletSpeed: 10
+    ShootOffset: 0.65
   PickupRadius: 0.8
+  BotRepathInterval: 0.35
+  BotStopDistance: 1.4
+  BotFireDistance: 10
+  BotGridCellSize: 0.5
   MatchDuration: 180
   HitMask:
     serializedVersion: 2

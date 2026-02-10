@@ -67,16 +67,7 @@ namespace TDS.Ecs.Systems
 
                     if (_config.TryGetWeapon(pickup.WeaponType, out var cfg))
                     {
-                        weapon.Type = cfg.Id;
-                        weapon.Range = cfg.Range;
-                        weapon.Damage = cfg.Damage;
-                        weapon.FireCooldown = 1f / Mathf.Max(0.01f, cfg.FireRate);
-                        weapon.MagSize = Mathf.Max(1, cfg.MagSize);
-                        weapon.ShootOffset = cfg.ShootOffset;
-                        weapon.Ammo = weapon.MagSize;
-                        weapon.Pellets = Mathf.Max(1, cfg.Pellets);
-                        weapon.SpreadDeg = Mathf.Max(0f, cfg.SpreadDeg);
-                        weapon.BulletSpeed = Mathf.Max(0.1f, cfg.BulletSpeed);
+                        weapon.Apply(cfg);
                         view.ServerSetWeapon(weapon.Type, weapon.Ammo, weapon.MagSize);
                     }
 

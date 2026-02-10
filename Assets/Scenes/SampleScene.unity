@@ -13024,6 +13024,9 @@ MonoBehaviour:
   MatchDuration: 180
   MatchState: {fileID: 667246034}
   SpawnPoints: []
+  DroppedPickupPrefab: {fileID: 0}
+  DropOwnerIgnoreSeconds: 0.35
+  BotCount: 1
 --- !u!4 &807756985
 Transform:
   m_ObjectHideFlags: 0

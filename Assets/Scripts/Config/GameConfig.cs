@@ -12,6 +12,8 @@ namespace TDS.Config
         public struct WeaponConfig
         {
             public WeaponType Id;
+            public WeaponFireMode FireMode;
+            public bool CanDrop;
             public BulletVisual BulletPrefab;
             public float Range;
             public int Damage;
@@ -28,12 +30,8 @@ namespace TDS.Config
         public int MaxHealth = 100;
         public float RespawnDelay = 3f;
 
-        [Header("Melee")]
-        public float MeleeRange = 0.9f;
-        public int MeleeDamage = 25;
-        public float MeleeCooldown = 0.5f;
-
         [Header("Weapons")]
+        public WeaponType DefaultWeaponType = WeaponType.Unarmed;
         public WeaponConfig[] Weapons;
 
         [Header("Pickups")]

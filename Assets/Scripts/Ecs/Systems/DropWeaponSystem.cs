@@ -1,4 +1,5 @@
 using Leopotam.EcsLite;
+using TDS.Config;
 using TDS.Ecs.Components;
 using TDS.Net;
 
@@ -6,10 +7,12 @@ namespace TDS.Ecs.Systems
 {
     public sealed class DropWeaponSystem : IEcsRunSystem
     {
+        private readonly GameConfig _config;
         private readonly ArenaNetworkManager _netManager;
 
-        public DropWeaponSystem(ArenaNetworkManager netManager)
+        public DropWeaponSystem(GameConfig config, ArenaNetworkManager netManager)
         {
+            _config = config;
             _netManager = netManager;
         }
 
@@ -41,25 +44,20 @@ namespace TDS.Ecs.Systems
                 ref var weapon = ref weaponPool.Get(entity);
                 if (weapon.Type == WeaponType.None)
                     continue;
+                if (!weapon.CanDrop)
+                    continue;
 
                 ref var tr = ref transformPool.Get(entity);
                 ref var view = ref viewPool.Get(entity);
 
                 _netManager.SpawnDroppedPickup(weapon.Type, tr.Position, view.View.netId);
+                
+                if (_config.TryGetWeapon(_config.DefaultWeaponType, out var defaultWeapon))
+                    weapon.Apply(defaultWeapon);
+                else
+                    weapon.Clear();
 
-                weapon.Type = WeaponType.None;
-                weapon.Range = 0f;
-                weapon.Damage = 0;
-                weapon.FireCooldown = 0f;
-                weapon.NextFireTime = 0f;
-                weapon.Ammo = 0;
-                weapon.MagSize = 0;
-                weapon.Pellets = 1;
-                weapon.SpreadDeg = 0f;
-                weapon.BulletSpeed = 0f;
-                weapon.ShootOffset = 0f;
-
-                view.View.ServerSetWeapon(WeaponType.None, 0, 0);
+                view.View.ServerSetWeapon(weapon.Type, weapon.Ammo, weapon.MagSize);
             }
         }
     }
